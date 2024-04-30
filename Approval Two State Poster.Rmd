@@ -1,7 +1,7 @@
 ---
 main_topsize: 0.15 
 main_bottomsize: 0.1
-title: '**Joint Israel-Palestine Opinion Polling, January 2023**'
+title: '**Democratic Decline: Examining Israel National Election Studies Data, 2022**'
 author:
   - name: '**Anna Weiner**'
     affil: 1
@@ -11,9 +11,9 @@ affiliation:
   - num: 1
     address: SIS, American University 
 main_findings:
-  - "Was support for a two-state solution was collapsing even before October 7?"
-primary_colour: "#663366"
-secondary_colour: "#CC00FF"
+  - "The seeds for Israel's current democratic crisis were sown by 2022."
+primary_colour: "#6699FF"
+secondary_colour: "#9999CC"
 accent_colour: "#9966FF"
 output: 
   posterdown::posterdown_betterport:
@@ -39,8 +39,9 @@ link-citations: true
   library(modelsummary)
   library(gt)
   library(readxl)
+  library(patchwork)
 
-IsrPal2022 <- read_excel("Table of Findings_ joint Palestinian-Israeli poll DEC2022 ENGLISH comparative file.xlsx")
+load("~/Downloads/Programming/Final-Project/INES_Data.RData")
 
 FctWhen = function(...) {
   args = rlang::list2(...)
@@ -48,88 +49,278 @@ FctWhen = function(...) {
   cases = case_when( !!!args )
   exec(fct_relevel, cases, !!!rhs)
 } 
+
+variable_labeller = function(variable, value){
+  return(names[value])
+}
 ```
 
 # Abstract
 
-In order to discern the strength of support for the two-state solution--which calls for an independent Jewish-Israeli state and an independent Palestinian state--prior to the October 7 war, I have selected a series of questions related to the two-state solution from an opinion poll published in January, 2023. This poll used Israelis to interview Israelis, and Palestinians to interview Palestinians. The findings show statistically significant skepticism towards the possibility of a two-state solution from all significant parties: Jewish Israelis, Arab Israelis, West Bank Palestinians, and Gazan Palestinians. 
+In 2022, Israel had their fifth election in a four-year span. This followed the collapse of the so-called "Coalition Government," which, for the first time in Israeli history, included the Palestinian party Ra'am in the majority. Israeli National Election Survey data is used in this project to discern Israeli public opinion on perceptions of the economy, security, and strength of Israel's democracy. 
 
 # Background
 
-Many, [including the United Nations](https://press.un.org/en/2024/sc15569.doc.htm#:~:text=A%20lasting%20end%20to%20the%20Israeli%2DPalestinian%20conflict,leaders%20amid%20the%20humanitarian%20crisis%20in%20Gaza.), tout the two-state solution as the only viable solution to the Arab-Israeli conflict. The two-state solution proposes that Palestinians are given an independent state in the land between the Mediterranean Sea and the Jordan River; such a state would share borders with Israel, which has existed as a Jewish state since independence from British colonial rule in 1948. While the specifics of any two-state solution are fraught--regarding Jewish settlers who live in Palestinian territory in the West Bank, the status of holy sites significant to both Jews and Muslims in Jerusalem, and control of scarce freshwater sources--this survey instead focuses on general attitudes towards peace between Israelis and Palestinians. 
+In December 2018, Israeli Prime Minister Binyamin Netanyahu called elections before the end of the term. This began a series of five elections in four years: [April 2019, September 2019, March 2020, March 2021, November 2022](https://www.reuters.com/world/middle-east/israels-election-cycle-2022-10-30/). The fourth of these elections was historical for being won by the most diverse coalition in Israeli history, including conservatives, liberals, and the controversial Arab-Israeli coalition Ra'am. These figures were united in opposition to Mr. Netanyahu. When the coalition collapsed and the fifth election was held in November 2022, Mr. Netanyahu regained the prime ministerialship. His term has been marked by [attacks on Israel's judiciary](https://apnews.com/article/israel-supreme-court-judicial-overhaul-78733a94428b8b9f2c311ee6779eba23), [coalition controversy](https://www.haaretz.com/israel-news/2024-04-21/ty-article/.premium/israeli-u-s-officials-say-new-sanctions-due-to-conduct-of-ben-gvir-smotrich/0000018f-018b-d6a0-a9ef-c19f11020000), and the [largest and longest-sustained protests in Israeli history](https://apnews.com/article/israel-netanyahu-protests-overhaul-courts-282e2cd18a2340a067625e148ebda41c). This project seeks to answer the question: could we see the seeds for Israel's democratic backsliding and gridlock in public opinion before the November 2022 election? 
 
 # Methods
 
-This is a presentation of data called [The Palestinian-Israeli Pulse, January 2023](https://en-social-sciences.tau.ac.il/peaceindex/joint-israeli-palestinian-surveys/2023-01) from `The Peace Index`, a project from the Gershon H. Gordon Faculty of Social Sciences at Tel Aviv University. The Palestinian-Israeli Pulse are joint polls conducted by the Palestinian Center for Policy and Survey Research in Ramallah and the International Program in Conflict Resolution and Mediation at Tel Aviv University. The Palestinian sample size was 1270 adults interviewed face-to-face in the West Bank, East Jerusalem and Gaza
-Strip between 1-4 December, 2022. The margin of error is +/-3%. The Israeli sample includes 900 adult Israelis interviewed through the internet.
-
-<br>
-<br>
-<br>
-<br>
+This is a presentation of data called [Israel National Election Studies Data, 2022](https://socsci4.tau.ac.il/mu2/ines/data/our-data/#carousel_9cf0), collected and operationalized by Tel Aviv University's Cohen Institute for Public Opinion Research. A copy of the questions and survey methodology can be found [here](https://socsci4.tau.ac.il/mu2/ines/wp-content/uploads/sites/4/2023/06/2022_Questionnaire_Eng.pdf); the appendix can be found [here](https://socsci4.tau.ac.il/mu2/ines/wp-content/uploads/sites/4/2023/06/2022_Appendix-1.pdf). This was a two-wave survey designed to study the full population of Israeli voters. The pre-election survey was conducted in October 2022 and contacted 1,362 Jewish Israelis and 127 Arab-Israelis. The post-election survey was carried out in November 2022, contacting 1,120 Jewish Israelis and 108 Arab-Israelis. Religiosity is used in several graphs and both regressions because it is the most salient identity in Israeli politics. 
 
 # Results
-
-Does either side trust the other to uphold a hypothetical agreement?
-
-```{r, peaceagreement, out.width='90%'}
-variable_labeller = function(variable, value){
-  return(names[value])
-}
+```{r, religion, out.width='100%'}
+democracy1 = df |>
+  select(v115, v116, v144) |>
+  drop_na() |>
+  pivot_longer(
+    cols = v115:v116,
+    names_to = 'question'
+  ) |>
+  mutate(
+    response = as.factor(value), 
+    response = FctWhen(
+      value == 1 ~ "1", 
+      value == 2 ~ "2",
+      value == 3 ~ "3",
+      value == 4 ~ "4", 
+      value == 5 ~ "5",
+      value == 6 ~ "6",
+      value == 7 ~ "7", 
+      value == 8 ~ "8",
+      value == 9 ~ "9",
+      value == 10 ~ "10"
+    ),
+    religiosity = FctWhen(
+      v144 == "1" ~ 'Ultra Religious', 
+      v144 == "2" ~ 'Orthodox',
+      v144 == "3" ~ 'Traditional',
+      v144 == "4" ~ 'Somewhat Religious',
+      v144 == "5" ~ 'Secular'
+    ) 
+  )
 
 names = list(
-  "2S1" = "Israel Would Honor a Peace Agreement.",
-  "2S2" = "A Palestinian Government Would Honor a Peace Agreement."
+  "v115" = "How Democratically is Israel Being Governed?",
+  "v116" = "How Satisfied are You With How the Israeli Political System Functions?"
 )
 
-minor = c("Gazans", "Israeli-Arabs", "Jews", "Total, Israel", "Total, Palestine", "West Bank")
+religionlevels = c("Ultra Religious", "Orthodox", "Traditional", "Somewhat Religious", "Secular")
 
-tab = IsrPal2022 |>
-  filter(Question == '2S2' | Question == '2S1' ) |>
+palette = c('olivedrab2', 'tomato1', 'slateblue', 'slategray3', 'orange2')
+
+tab2 = democracy1 |>
+  group_by(religiosity) |>
+  ggplot(aes(x = response, fill = religiosity, color = religiosity)) +
+  geom_histogram(
+    stat = 'count',
+    binwidth = 1,
+    position = 'dodge'
+  ) +
+  facet_wrap(~ question, nrow = 2, labeller = variable_labeller) +
+  labs(
+    title = "Perceptions of Israeli Democracy and Political Functionality",
+    x = "Responses: 1 = Worst, 10 = Perfect", 
+    y = "Frequency"
+  ) +
+  scale_fill_manual(
+    values = palette,
+    name = "Religiosity"
+  ) +
+  scale_color_manual(
+    values = palette,
+    name = "Religiosity"
+  ) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(face = 'bold', hjust = 0.5),
+    legend.text = element_text(family = 'Times'),
+    strip.background = element_rect(fill = "slateblue4", color = "black"),
+    strip.text = element_text(family = 'Times', face = 'bold', color = "white"),
+    axis.title.y = element_text(face = 'bold', family = 'Times'),
+    axis.title.x = element_text(face = 'bold', family = 'Times'),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(family = 'Times'),
+    axis.text.x = element_text(family = 'Times'),
+    title = element_text(family = 'Times'),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = 'lightgrey'),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(face = 'italic', hjust = .5)
+  )
+tab2 
+```
+
+The above graphs show responses to the questions related to perceptions of Israeli democracy and political functionality, disagregated by religious group. Please note that all religions are present in each religiosity category. These top graph shows that, across religiosity, there is weakly positive satisfaction with the perceived democratic integrity of the Israeli government. However, the bottom graph shows that, also across religiosity, there are strong majorities expressing deep dissatifaction with the political system.
+
+```{r, democracy, out.width='90%'}
+democracy2 = df |>
+  drop_na() |>
+  select(v119, v705) |>
   mutate(
-    option = FctWhen(
-      Option == "1" ~ 'Yes', 
-      Option == "0" ~ 'No',
+    raam = FctWhen(
+      v705 == 1 ~ "Very Positive", 
+      v705 == 2 ~ "Positive", 
+      v705 == 3 ~ "Neutral",
+      v705 == 4 ~ "Negative",
+      v705 == 5 ~ "Very Negative",
+    ),
+    commitment = FctWhen(
+      v119 == 1 ~ "Strongly Agree", 
+      v119 == 2 ~ "Agree", 
+      v119 == 3 ~ "Disagree",
+      v119 == 4 ~ "Strongly Disagree"
     )
   ) |>
   pivot_longer(
-    cols = PalTotal:IsrArab,
-    names_to = 'population',
-  ) |>
-  mutate(
-    population = FctWhen(
-      population == "gaza" ~ 'Gaza', 
-      population == "westbank" ~ 'West Bank',
-      population == "IsrArab" ~ 'Israeli-Arabs',
-      population == "IsrJew" ~ 'Jews',
-      population == "PalTotal" ~ 'Total, Palestine',
-      population == "IsrTotal" ~ 'Total, Israel',
-    )
+    cols = raam:commitment,
+    names_to = 'question',
+  ) 
+
+names = list(
+  "commitment" = "I am committed to Israeli Democracy, even if I don’t like a vote outcome",
+  "raam" = "What is your opinion on the participation of Ra’am party in the last coalition?"
+)
+
+tab3 = democracy2 |>
+  filter(question == 'commitment') |>
+  ggplot(aes(x = value)) +
+  geom_histogram(
+    stat = 'count',
+    binwidth = 1,
+    position = 'dodge',
+    fill = 'plum3', 
+    color = 'black'
+  ) +
+  labs(
+    title = "I am committed to Israeli democracy, even if I don’t like a vote outcome.",
+    x = "Responses", 
+    y = "Frequency"
+  ) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(face = 'bold', hjust = 0.5),
+    legend.text = element_text(family = 'Times'),
+    strip.background = element_rect(fill = "slateblue4", color = "black"),
+    strip.text = element_text(family = 'Times', face = 'bold', color = "white"),
+    axis.title.y = element_text(face = 'bold', family = 'Times'),
+    axis.title.x = element_text(face = 'bold', family = 'Times'),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(family = 'Times'),
+    axis.text.x = element_text(family = 'Times'),
+    title = element_text(family = 'Times'),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = 'lightgrey'),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(face = 'italic', hjust = .5)
   )
 
-palette = c('mediumspringgreen', 'plum3')
+tab4 = democracy2 |>
+  filter(question == 'raam') |>
+  ggplot(aes(x = value)) +
+  geom_histogram(
+    stat = 'count',
+    binwidth = 1,
+    position = 'dodge',
+    fill = 'plum3', 
+    color = 'black'
+  ) +
+  labs(
+    title = "What is your opinion on the participation of Ra’am party in the last coalition?",
+    x = "Responses", 
+    y = "Frequency"
+  ) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(face = 'bold', hjust = 0.5),
+    legend.text = element_text(family = 'Times'),
+    strip.background = element_rect(fill = "slateblue4", color = "black"),
+    strip.text = element_text(family = 'Times', face = 'bold', color = "white"),
+    axis.title.y = element_text(face = 'bold', family = 'Times'),
+    axis.title.x = element_text(face = 'bold', family = 'Times'),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(family = 'Times'),
+    axis.text.x = element_text(family = 'Times'),
+    title = element_text(family = 'Times'),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = 'lightgrey'),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(face = 'italic', hjust = .5)
+  )
+
+layout = "
+  A
+  B
+  "
+
+tab3 + tab4 +
+  plot_layout(design = layout)
+```
+Few respondants believe in a commitment to Israeli democracy even when they or their party loses a vote. Additionally, a large majority opposes the introduction of the first Arab-Israeli (Palestinian) party into the governing coalition.
+
+```{r, improvement, out.width='90%'}
+names = list(
+  "v9" = "Economic Situation",
+  "v11" = "Security Situation"
+)
+
+minor = c("Improved A Lot", "Improved a Little", "No Change", "Deteriorated a Little", "Deteriorated a Lot")
+
+tab = df |>
+  select(v9, v11) |>
+  drop_na() |>
+  pivot_longer(
+    cols = c(v9, v11),
+    names_to = 'question',
+  ) |>
+  mutate(
+    response = FctWhen(
+      value == "1" ~ 'Improved A Lot', 
+      value == "2" ~ 'Improved a Little',
+      value == "3" ~ 'No Change',
+      value == "4" ~ 'Deteriorated a Little',
+      value == "5" ~ 'Deteriorated a Lot'
+    )
+  ) |>
+  mutate(
+    avg = case_when(
+      question == "v9" & value == 1 ~ sum(question == "v9" & value == 1)/1585,
+      question == "v9" & value == 2 ~ sum(question == "v9" & value == 2)/1585,
+      question == "v9" & value == 3 ~ sum(question == "v9" & value == 3)/1585,
+      question == "v9" & value == 4 ~ sum(question == "v9" & value == 4)/1585,
+      question == "v9" & value == 5 ~ sum(question == "v9" & value == 5)/1585,
+      question == "v11" & value == 1 ~ sum(question == "v11" & value == 1)/1585,
+      question == "v11" & value == 2 ~ sum(question == "v11" & value == 2)/1585,
+      question == "v11" & value == 3 ~ sum(question == "v11" & value == 3)/1585,
+      question == "v11" & value == 4 ~ sum(question == "v11" & value == 4)/1585,
+      question == "v11" & value == 5 ~ sum(question == "v11" & value == 5)/1585
+    )
+  )
 
 tab1 = tab |>
-  ggplot(aes(x = population, y = value, color = option)) +
-  geom_point(size = 3) +
-  facet_wrap(~ Question, nrow = 2, labeller = variable_labeller) +
-  scale_color_manual(
-    values = palette,
-    name = "Answer"
+  ggplot(aes(x = response, y = avg)) +
+  geom_point(shape = 21, size = 3, fill = 'plum3', color = 'black') +
+  facet_wrap(~ question, nrow = 2, labeller = variable_labeller) +
+  labs(
+    title = "In your opinion, has the ____ of Israel improved in the last four years?",
+    x = "Response", 
+    y = "Percent"
   ) +
   scale_y_continuous(
-    breaks = seq(0, 1, by = .25),
-    labels = scales::percent_format(scale = 1)
-  ) +
-  labs(
-    title = "Would the Israeli/Palestinian Government Honor a Peace Agreement?",
-    x = "Population", 
-    y = "Responses"
+    breaks = seq(0, 1, by = .05),
+    labels = scales::percent_format(accuracy = 1)
   ) +
   theme(
     legend.position = "right",
     legend.title = element_text(face = 'bold', hjust = 0.5),
     legend.text = element_text(family = 'Times'),
+    strip.background = element_rect(fill = "slateblue4", color = "black"),
+    strip.text = element_text(family = 'Times', face = 'bold', color = "white"),
     axis.title.y = element_text(face = 'bold', family = 'Times'),
     axis.title.x = element_text(face = 'bold', family = 'Times'),
     axis.ticks.y = element_blank(),
@@ -143,95 +334,20 @@ tab1 = tab |>
     plot.title = element_text(hjust = .5),
     plot.subtitle = element_text(face = 'italic', hjust = .5)
   )
-tab1
+tab1 + expand_limits(y = 0)
 ```
 
-Interestingly, majorities of Palestinians and Israelis are united on their belief that the Israeli government would not uphold a hypothetical peace agreement. There also appears to be a consensus that the Palestinian government would honor a peace agreement. 
-
-```{r, action, out.width='90%'}
-names = list(
-  "A1" = "Act",
-  "A2" = "Participate in a Workshop"
-)
-
-actwork = IsrPal2022 |>
-  filter(Question == 'A1' | Question == 'A2' ) |>
-  mutate(
-    options = FctWhen(
-      Option == "1" ~ 'Strongly Disagree', 
-      Option == "2" ~ 'Disagree',
-      Option == "3" ~ 'Slightly Disagree', 
-      Option == "4" ~ 'Slightly Agree',
-      Option == "5" ~ 'Agree', 
-      Option == "6" ~ 'Strongly Agree',
-    )
-  ) |>
-  pivot_longer(
-    cols = PalTotal:IsrArab,
-    names_to = 'population',
-  ) |>
-  mutate(
-    population = FctWhen(
-      population == "gaza" ~ 'Gaza', 
-      population == "westbank" ~ 'West Bank',
-      population == "IsrArab" ~ 'Israeli-Arabs',
-      population == "IsrJew" ~ 'Jews',
-      population == "PalTotal" ~ 'Total, Palestine',
-      population == "IsrTotal" ~ 'Total, Israel',
-    )
-  )
-
-palette = c('royalblue2', 'magenta', 'mediumspringgreen', 'orange2', 'plum3', 'sienna3')
-
-
-tab2 = actwork |>
-  ggplot(aes(x = population, y = value, color = options)) +
-  geom_point(size = 3) +
-  facet_wrap(~ Question, nrow = 2, labeller = variable_labeller) +
-  scale_color_manual(
-    values = palette,
-    name = "Answer"
-  ) +
-  scale_y_continuous(
-    breaks = seq(0, 1, by = .25),
-    labels = scales::percent_format(scale = 1)
-  ) +
-  labs(
-    title = "I would ____ to promote good relations between Israelis & Palestinians",
-    x = "Population", 
-    y = "Responses"
-  ) +
-  theme(
-    legend.position = "right",
-    legend.title = element_text(face = 'bold', hjust = 0.5),
-    legend.text = element_text(family = 'Times'),
-    axis.title.y = element_text(face = 'bold', family = 'Times'),
-    axis.title.x = element_text(face = 'bold', family = 'Times'),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.text.y = element_text(family = 'Times'),
-    axis.text.x = element_text(family = 'Times'),
-    title = element_text(family = 'Times'),
-    panel.grid.major.x = element_line(color = 'grey'),
-    panel.grid.major.y = element_line(color = 'lightgrey'),
-    panel.background = element_blank(),
-    plot.title = element_text(hjust = .5),
-    plot.subtitle = element_text(face = 'italic', hjust = .5)
-  )
-tab2
-```
-
-While Israelis (defined as Israeli-Arabs or Jews) are more willing than their Palestinian counterparts to saay they `slightly agree` or `agree` to act to promote good relations, when this hypothetical action is concretized as `participating in a workshop`, support plummets. 
+Less than 15% of Israeli voters believe that the nation's security or economic situation has improved in the past four years. 
 
 Below is a table depicting two regressions:
 
-1. The total responses from Palestinians regressed onto the total responses from Israelis.
-2. The responses of all Palestinian groups (West Bank, Gaza, Israeli-Arabs) regressed onto the responses from (Israeli) Jews. 
+1. Responses to two questions (one regarding perceptions of democratic governance, the other regarding perceptions of Israel's political functioning) regressed onto the reported religiosity of Israelis.
+2. Responses to two questions (one regarding perceived improvements in Israel's economy, the other regarding perceived improvements in Israel's national security) regressed onto the reported religiosity of Israelis.
 
 ```{r, regressionfig, out.height="130%", out.width="110%"}
 mods = list(
-  '(1)' = lm(PalTotal ~ IsrTotal, IsrPal2022),
-  '(2)' = lm(IsrJew ~ westbank + gaza + IsrArab, IsrPal2022)
+  '(1)' = lm(v144 ~ v115 + v116, data = df),
+  '(2)' = lm(v144 ~ v9 + v11, data = df)
   )
 
 modelsummary(mods, fmt = fmt_significant(2), 
@@ -240,29 +356,21 @@ modelsummary(mods, fmt = fmt_significant(2),
              stars = c('*' = 0.05),
              title = 'Linear Regression, Selected Responses',
              coef_map = c(
-               'PalTotal' = 'Total, Palestinians',
-               'IsrTotal' = 'Total, Israelis',
-               'IsrJew' = 'Jewish Israelis',
-               'IsrArab' = 'Arab Israelis',
-               'westbank' = 'West Bank Palestinians',
-               'gaza' = 'Gazan Palestinians',
+               'v144' = 'Religiosity',
+               'v115' = 'Democratic Governance',
+               'v116' = 'Political Functioning',
+               'v9' = 'Economy',
+               'v11' = 'Security',
                '(Intercept)' = '(Intercept)'
              )
-)
+) 
 ```
-From regression 1, we can conclude that the responses of Palestinians and Israelis are significantly predictors of each other. The coefficient implies that a one-unit increase in Israeli opinion polls, corresponding Palestinian opinion polls are expected to increase by .98. 
+From regression 1, we can conclude that increased religiosity is slightly, but signficantly, associated with positive regard towards Israeli governance and political functioning. The coefficient implies that a one-unit increase in religiosity corresponds to an expected to increase in governance and political functioning scores. 
 
-From regression 2, we can conclude that the responses of Arab Israeli and West Bank Palestinians are significantly predictors of Jewish Israeli responses to polling on the two-state solution, while the responses of Gazans do not significantly impact Jewish Israeli responses. For both Arab Israeli and West Bank Palestinians the coefficient is positive, meaning that an increase in either one is expected to produce an increase in Jewish responses. 
+From regression 2, we can conclude that perceptions of Israel's economy and national security are significant predictors of religiosity. A one-unit increase in religiosity corresponds to an expected to decrease in perceptions of the economy and security. 
 
 # Discussion
-We can reject the null hypothesis that there was support for the two-state solution prior to October 7. The first table discussing whether the Israeli/Palestinian government would honor a hypothetical peace agreement (two-state solution) shows clear mistrust in the Israeli government. This is likely due to [mistrust in Israeli Prime Minister Binyamin Netanyahu](https://www.haaretz.com/israel-news/2023-04-02/ty-article/.highlight/why-are-israels-protests-continuing-because-nobody-trusts-netanyahu-anymore/00000187-4231-d6d3-abff-e37dbd0f0000). 
-
-The second table discussing willingness to act or participate in a workshop to promote good relations between Israeli Jews and Palestinians shows that, generally, all parties excluding Israeli-Arabs are skeptical of the efficacy of non-specific actions and workshops. This is perhaps because Israeli-Arabs, as members of both the Palestinian and Israeli communities, are less skeptical of the possibility for coexistence. 
-
-There are two main implications of the regression table:
-
-1. In the first regression, the findings imply that Israelis and Palestinians are closely monitoring each others' opinions regarding a two-state solution. 
-2. In the second regression, the lack of significance for the Gaza coefficient is perhaps because Israelis have almost no in-person interactions with Gazans, as the Israel-Gaza border has been largely shut since the [2005 disengagement from the Gaza Strip](https://embassies.gov.il/MFA/AboutIsrael/Maps/Pages/Israels%20Disengagement%20Plan-%202005.aspx).
+We can reject the null hypothesis that the seeds of Israel's current democratic crisis were sown either with the start of the Judicial overhaul or the war with Hamas beginning on October 7. Responses indicate that a large majority of Israeli voters oppose cornerstones of democracy such as accepting the outcome of an election and minority inclusion. Thus, there is evidence that the roots of Israel's current democratic crisis are at least two years old. All the above findings indicate that Israel was vulnerable to demogogues and extremists going into the November 2022 election. Perhaps it is unsurprising that the November 2022 election saw the ascendance of the most [extremist, anti-Arab, and right-wing governing coalition in Israeli history](https://www.vox.com/world/2023/1/20/23561464/israel-new-right-wing-government-extreme-protests-netanyahu-biden-ben-gvir).
 
 # References
-Thank you to the Palestinian Center for Policy and Survey Research and Tel Aviv University for publishing English-language, freely available data. 
+Thank you to the Tel Aviv University's B. I. and Lucille Cohen Institute for Public Opinion Research for offering freely available Israeli election data. 
