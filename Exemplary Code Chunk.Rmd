@@ -1,0 +1,25 @@
+---
+title: "Exemplary Code Chunk"
+author: "Anna Weiner"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+---
+```{r, echo = TRUE}
+numfunction = function(.data, x){
+  require(dplyr)
+  require(knitr)
+    x = enquo(x)
+    .data |>
+     summarize(
+      Min = min(!!x, na.rm = T),
+      Mean = mean(!!x, na.rm = T),
+      Median = median(!!x, na.rm = T),
+      Max = max(!!x, na.rm = T),
+      NAs = sum(is.na(!!x))
+    ) |>
+      kable(digits = 1L)   
+}    
+```
