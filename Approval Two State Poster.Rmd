@@ -1,0 +1,268 @@
+---
+main_topsize: 0.15 
+main_bottomsize: 0.1
+title: '**Joint Israel-Palestine Opinion Polling, January 2023**'
+author:
+  - name: '**Anna Weiner**'
+    affil: 1
+    main: true
+    email: aw2838a@american.edu
+affiliation:
+  - num: 1
+    address: SIS, American University 
+main_findings:
+  - "Was support for a two-state solution was collapsing even before October 7?"
+primary_colour: "#663366"
+secondary_colour: "#CC00FF"
+accent_colour: "#9966FF"
+output: 
+  posterdown::posterdown_betterport:
+    self_contained: true
+    pandoc_args: --mathjax
+    number_sections: false
+link-citations: true
+---
+
+```{r setup, include=FALSE}
+ knitr::opts_chunk$set(
+    echo = FALSE, 
+    comment = NA,
+    message = FALSE, 
+    warning = FALSE,
+    fig.align = 'center'
+  )
+  options(modelsummary_factory_default = "gt")
+
+  library(tidyverse)
+  library(ggplot2)
+  library(knitr)
+  library(modelsummary)
+  library(gt)
+  library(readxl)
+
+IsrPal2022 <- read_excel("Table of Findings_ joint Palestinian-Israeli poll DEC2022 ENGLISH comparative file.xlsx")
+
+FctWhen = function(...) {
+  args = rlang::list2(...)
+  rhs = map(args, rlang::f_rhs)
+  cases = case_when( !!!args )
+  exec(fct_relevel, cases, !!!rhs)
+} 
+```
+
+# Abstract
+
+In order to discern the strength of support for the two-state solution--which calls for an independent Jewish-Israeli state and an independent Palestinian state--prior to the October 7 war, I have selected a series of questions related to the two-state solution from an opinion poll published in January, 2023. This poll used Israelis to interview Israelis, and Palestinians to interview Palestinians. The findings show statistically significant skepticism towards the possibility of a two-state solution from all significant parties: Jewish Israelis, Arab Israelis, West Bank Palestinians, and Gazan Palestinians. 
+
+# Background
+
+Many, [including the United Nations](https://press.un.org/en/2024/sc15569.doc.htm#:~:text=A%20lasting%20end%20to%20the%20Israeli%2DPalestinian%20conflict,leaders%20amid%20the%20humanitarian%20crisis%20in%20Gaza.), tout the two-state solution as the only viable solution to the Arab-Israeli conflict. The two-state solution proposes that Palestinians are given an independent state in the land between the Mediterranean Sea and the Jordan River; such a state would share borders with Israel, which has existed as a Jewish state since independence from British colonial rule in 1948. While the specifics of any two-state solution are fraught--regarding Jewish settlers who live in Palestinian territory in the West Bank, the status of holy sites significant to both Jews and Muslims in Jerusalem, and control of scarce freshwater sources--this survey instead focuses on general attitudes towards peace between Israelis and Palestinians. 
+
+# Methods
+
+This is a presentation of data called [The Palestinian-Israeli Pulse, January 2023](https://en-social-sciences.tau.ac.il/peaceindex/joint-israeli-palestinian-surveys/2023-01) from `The Peace Index`, a project from the Gershon H. Gordon Faculty of Social Sciences at Tel Aviv University. The Palestinian-Israeli Pulse are joint polls conducted by the Palestinian Center for Policy and Survey Research in Ramallah and the International Program in Conflict Resolution and Mediation at Tel Aviv University. The Palestinian sample size was 1270 adults interviewed face-to-face in the West Bank, East Jerusalem and Gaza
+Strip between 1-4 December, 2022. The margin of error is +/-3%. The Israeli sample includes 900 adult Israelis interviewed through the internet.
+
+<br>
+<br>
+<br>
+<br>
+
+# Results
+
+Does either side trust the other to uphold a hypothetical agreement?
+
+```{r, peaceagreement, out.width='90%'}
+variable_labeller = function(variable, value){
+  return(names[value])
+}
+
+names = list(
+  "2S1" = "Israel Would Honor a Peace Agreement.",
+  "2S2" = "A Palestinian Government Would Honor a Peace Agreement."
+)
+
+minor = c("Gazans", "Israeli-Arabs", "Jews", "Total, Israel", "Total, Palestine", "West Bank")
+
+tab = IsrPal2022 |>
+  filter(Question == '2S2' | Question == '2S1' ) |>
+  mutate(
+    option = FctWhen(
+      Option == "1" ~ 'Yes', 
+      Option == "0" ~ 'No',
+    )
+  ) |>
+  pivot_longer(
+    cols = PalTotal:IsrArab,
+    names_to = 'population',
+  ) |>
+  mutate(
+    population = FctWhen(
+      population == "gaza" ~ 'Gaza', 
+      population == "westbank" ~ 'West Bank',
+      population == "IsrArab" ~ 'Israeli-Arabs',
+      population == "IsrJew" ~ 'Jews',
+      population == "PalTotal" ~ 'Total, Palestine',
+      population == "IsrTotal" ~ 'Total, Israel',
+    )
+  )
+
+palette = c('mediumspringgreen', 'plum3')
+
+tab1 = tab |>
+  ggplot(aes(x = population, y = value, color = option)) +
+  geom_point(size = 3) +
+  facet_wrap(~ Question, nrow = 2, labeller = variable_labeller) +
+  scale_color_manual(
+    values = palette,
+    name = "Answer"
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 1, by = .25),
+    labels = scales::percent_format(scale = 1)
+  ) +
+  labs(
+    title = "Would the Israeli/Palestinian Government Honor a Peace Agreement?",
+    x = "Population", 
+    y = "Responses"
+  ) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(face = 'bold', hjust = 0.5),
+    legend.text = element_text(family = 'Times'),
+    axis.title.y = element_text(face = 'bold', family = 'Times'),
+    axis.title.x = element_text(face = 'bold', family = 'Times'),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(family = 'Times'),
+    axis.text.x = element_text(family = 'Times'),
+    title = element_text(family = 'Times'),
+    panel.grid.major.x = element_line(color = 'grey'),
+    panel.grid.major.y = element_line(color = 'lightgrey'),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(face = 'italic', hjust = .5)
+  )
+tab1
+```
+
+Interestingly, majorities of Palestinians and Israelis are united on their belief that the Israeli government would not uphold a hypothetical peace agreement. There also appears to be a consensus that the Palestinian government would honor a peace agreement. 
+
+```{r, action, out.width='90%'}
+names = list(
+  "A1" = "Act",
+  "A2" = "Participate in a Workshop"
+)
+
+actwork = IsrPal2022 |>
+  filter(Question == 'A1' | Question == 'A2' ) |>
+  mutate(
+    options = FctWhen(
+      Option == "1" ~ 'Strongly Disagree', 
+      Option == "2" ~ 'Disagree',
+      Option == "3" ~ 'Slightly Disagree', 
+      Option == "4" ~ 'Slightly Agree',
+      Option == "5" ~ 'Agree', 
+      Option == "6" ~ 'Strongly Agree',
+    )
+  ) |>
+  pivot_longer(
+    cols = PalTotal:IsrArab,
+    names_to = 'population',
+  ) |>
+  mutate(
+    population = FctWhen(
+      population == "gaza" ~ 'Gaza', 
+      population == "westbank" ~ 'West Bank',
+      population == "IsrArab" ~ 'Israeli-Arabs',
+      population == "IsrJew" ~ 'Jews',
+      population == "PalTotal" ~ 'Total, Palestine',
+      population == "IsrTotal" ~ 'Total, Israel',
+    )
+  )
+
+palette = c('royalblue2', 'magenta', 'mediumspringgreen', 'orange2', 'plum3', 'sienna3')
+
+
+tab2 = actwork |>
+  ggplot(aes(x = population, y = value, color = options)) +
+  geom_point(size = 3) +
+  facet_wrap(~ Question, nrow = 2, labeller = variable_labeller) +
+  scale_color_manual(
+    values = palette,
+    name = "Answer"
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 1, by = .25),
+    labels = scales::percent_format(scale = 1)
+  ) +
+  labs(
+    title = "I would ____ to promote good relations between Israelis & Palestinians",
+    x = "Population", 
+    y = "Responses"
+  ) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(face = 'bold', hjust = 0.5),
+    legend.text = element_text(family = 'Times'),
+    axis.title.y = element_text(face = 'bold', family = 'Times'),
+    axis.title.x = element_text(face = 'bold', family = 'Times'),
+    axis.ticks.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(family = 'Times'),
+    axis.text.x = element_text(family = 'Times'),
+    title = element_text(family = 'Times'),
+    panel.grid.major.x = element_line(color = 'grey'),
+    panel.grid.major.y = element_line(color = 'lightgrey'),
+    panel.background = element_blank(),
+    plot.title = element_text(hjust = .5),
+    plot.subtitle = element_text(face = 'italic', hjust = .5)
+  )
+tab2
+```
+
+While Israelis (defined as Israeli-Arabs or Jews) are more willing than their Palestinian counterparts to saay they `slightly agree` or `agree` to act to promote good relations, when this hypothetical action is concretized as `participating in a workshop`, support plummets. 
+
+Below is a table depicting two regressions:
+
+1. The total responses from Palestinians regressed onto the total responses from Israelis.
+2. The responses of all Palestinian groups (West Bank, Gaza, Israeli-Arabs) regressed onto the responses from (Israeli) Jews. 
+
+```{r, regressionfig, out.height="130%", out.width="110%"}
+mods = list(
+  '(1)' = lm(PalTotal ~ IsrTotal, IsrPal2022),
+  '(2)' = lm(IsrJew ~ westbank + gaza + IsrArab, IsrPal2022)
+  )
+
+modelsummary(mods, fmt = fmt_significant(2), 
+             gof_map = 'nobs', 
+             statistic = NULL,
+             stars = c('*' = 0.05),
+             title = 'Linear Regression, Selected Responses',
+             coef_map = c(
+               'PalTotal' = 'Total, Palestinians',
+               'IsrTotal' = 'Total, Israelis',
+               'IsrJew' = 'Jewish Israelis',
+               'IsrArab' = 'Arab Israelis',
+               'westbank' = 'West Bank Palestinians',
+               'gaza' = 'Gazan Palestinians',
+               '(Intercept)' = '(Intercept)'
+             )
+)
+```
+From regression 1, we can conclude that the responses of Palestinians and Israelis are significantly predictors of each other. The coefficient implies that a one-unit increase in Israeli opinion polls, corresponding Palestinian opinion polls are expected to increase by .98. 
+
+From regression 2, we can conclude that the responses of Arab Israeli and West Bank Palestinians are significantly predictors of Jewish Israeli responses to polling on the two-state solution, while the responses of Gazans do not significantly impact Jewish Israeli responses. For both Arab Israeli and West Bank Palestinians the coefficient is positive, meaning that an increase in either one is expected to produce an increase in Jewish responses. 
+
+# Discussion
+We can reject the null hypothesis that there was support for the two-state solution prior to October 7. The first table discussing whether the Israeli/Palestinian government would honor a hypothetical peace agreement (two-state solution) shows clear mistrust in the Israeli government. This is likely due to [mistrust in Israeli Prime Minister Binyamin Netanyahu](https://www.haaretz.com/israel-news/2023-04-02/ty-article/.highlight/why-are-israels-protests-continuing-because-nobody-trusts-netanyahu-anymore/00000187-4231-d6d3-abff-e37dbd0f0000). 
+
+The second table discussing willingness to act or participate in a workshop to promote good relations between Israeli Jews and Palestinians shows that, generally, all parties excluding Israeli-Arabs are skeptical of the efficacy of non-specific actions and workshops. This is perhaps because Israeli-Arabs, as members of both the Palestinian and Israeli communities, are less skeptical of the possibility for coexistence. 
+
+There are two main implications of the regression table:
+
+1. In the first regression, the findings imply that Israelis and Palestinians are closely monitoring each others' opinions regarding a two-state solution. 
+2. In the second regression, the lack of significance for the Gaza coefficient is perhaps because Israelis have almost no in-person interactions with Gazans, as the Israel-Gaza border has been largely shut since the [2005 disengagement from the Gaza Strip](https://embassies.gov.il/MFA/AboutIsrael/Maps/Pages/Israels%20Disengagement%20Plan-%202005.aspx).
+
+# References
+Thank you to the Palestinian Center for Policy and Survey Research and Tel Aviv University for publishing English-language, freely available data. 
