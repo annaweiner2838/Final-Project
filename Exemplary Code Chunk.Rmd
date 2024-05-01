@@ -7,19 +7,24 @@ output:
     includes:
       in_header: header.tex
 ---
-```{r, echo = TRUE}
+```{r, exemplarycode echo = TRUE}
 numfunction = function(.data, x){
   require(dplyr)
   require(knitr)
     x = enquo(x)
     .data |>
      summarize(
-      Min = min(!!x, na.rm = T),
+      Minimum = min(!!x, na.rm = T),
       Mean = mean(!!x, na.rm = T),
       Median = median(!!x, na.rm = T),
-      Max = max(!!x, na.rm = T),
+      Maximum = max(!!x, na.rm = T),
       NAs = sum(is.na(!!x))
     ) |>
       kable(digits = 1L)   
 }    
+```
+
+```{r, application}
+load("/Users/annaweiner/Downloads/Programming/Final-Project/Israel_Peripherality_Data.RData")
+numfunction(codebook_clean, population)
 ```
