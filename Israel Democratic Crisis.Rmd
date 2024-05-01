@@ -57,7 +57,7 @@ variable_labeller = function(variable, value){
 
 # Abstract
 
-In 2022, Israel had their fifth election in a four-year span. This followed the collapse of the so-called "Coalition Government," which, for the first time in Israeli history, included the Palestinian party Ra'am in the majority. Israeli National Election Survey data is used in this project to discern Israeli public opinion on perceptions of the economy, security, and strength of Israel's democracy. 
+In 2022, Israel had their fifth election in a four-year span. This followed the collapse of a governing coalition, which, for the first time in Israeli history, included any Palestinian party. Israeli National Election Survey data is used in this project to discern Israeli public opinion on perceptions of Israeli democracy. 
 
 # Background
 
@@ -65,7 +65,37 @@ In December 2018, Israeli Prime Minister Binyamin Netanyahu called elections bef
 
 # Methods
 
-This is a presentation of data called [Israel National Election Studies Data, 2022](https://socsci4.tau.ac.il/mu2/ines/data/our-data/#carousel_9cf0), collected and operationalized by Tel Aviv University's Cohen Institute for Public Opinion Research. A copy of the questions and survey methodology can be found [here](https://socsci4.tau.ac.il/mu2/ines/wp-content/uploads/sites/4/2023/06/2022_Questionnaire_Eng.pdf); the appendix can be found [here](https://socsci4.tau.ac.il/mu2/ines/wp-content/uploads/sites/4/2023/06/2022_Appendix-1.pdf). This was a two-wave survey designed to study the full population of Israeli voters. The pre-election survey was conducted in October 2022 and contacted 1,362 Jewish Israelis and 127 Arab-Israelis. The post-election survey was carried out in November 2022, contacting 1,120 Jewish Israelis and 108 Arab-Israelis. Religiosity is used in several graphs and both regressions because it is the most salient identity in Israeli politics. 
+This is a presentation of data called [Israel National Election Studies Data, 2022](https://socsci4.tau.ac.il/mu2/ines/data/our-data/#carousel_9cf0), collected and operationalized by Tel Aviv University's Cohen Institute for Public Opinion Research. A copy of the questions and survey methodology can be found [here](https://socsci4.tau.ac.il/mu2/ines/wp-content/uploads/sites/4/2023/06/2022_Questionnaire_Eng.pdf); the appendix can be found [here](https://socsci4.tau.ac.il/mu2/ines/wp-content/uploads/sites/4/2023/06/2022_Appendix-1.pdf). This was a two-wave survey designed to study the full population of Israeli voters. The pre-election survey was conducted in October 2022 and contacted 1,362 Jewish Israelis and 127 Arab-Israelis. The post-election survey was carried out in November 2022, contacting 1,120 Jewish Israelis and 108 Arab-Israelis. Religiosity is used in several graphs and both regressions because it is the most salient identity in Israeli politics; please note that all religions are present in each religiosity category.
+
+```{r}
+cbfactor = function(.data, x){
+    x = enquo(x)
+    count(.data, !!x) |>
+      mutate(
+        Value = as.numeric(!!x),
+        Label = as_factor(!!x),
+        Frequency = n,
+        Percent = n / sum(n) * 100,
+        .keep = 'unused'
+      ) |>
+      knitr::kable(digits = 1L)
+}
+
+democracy1 = df |>
+  select(v144) |>
+  drop_na() |>
+  mutate(
+    religiosity = FctWhen(
+      v144 == "1" ~ 'Ultra Religious', 
+      v144 == "2" ~ 'Orthodox',
+      v144 == "3" ~ 'Traditional',
+      v144 == "4" ~ 'Somewhat Religious',
+      v144 == "5" ~ 'Secular'
+    ) 
+  )
+
+cbfactor(democracy1, religiosity)
+```
 
 # Results
 ```{r, religion, out.width='100%'}
@@ -152,7 +182,7 @@ tab2 = democracy1 |>
 tab2 
 ```
 
-The above graphs show responses to the questions related to perceptions of Israeli democracy and political functionality, disagregated by religious group. Please note that all religions are present in each religiosity category. These top graph shows that, across religiosity, there is weakly positive satisfaction with the perceived democratic integrity of the Israeli government. However, the bottom graph shows that, also across religiosity, there are strong majorities expressing deep dissatifaction with the political system.
+The above graphs show responses to the questions related to perceptions of Israeli democracy and political functionality, disagregated by religious group. These top graph shows that, across religiosity, there is weakly positive satisfaction with the perceived democratic integrity of the Israeli government. However, the bottom graph shows that, also across religiosity, there are strong majorities expressing deep dissatisfaction with the political system.
 
 ```{r, democracy, out.width='90%'}
 democracy2 = df |>
@@ -186,10 +216,10 @@ names = list(
 tab3 = democracy2 |>
   filter(question == 'commitment') |>
   ggplot(aes(x = value)) +
-  geom_histogram(
+  geom_point(
     stat = 'count',
-    binwidth = 1,
-    position = 'dodge',
+    shape = 21,
+    size = 4,
     fill = 'plum3', 
     color = 'black'
   ) +
@@ -221,10 +251,10 @@ tab3 = democracy2 |>
 tab4 = democracy2 |>
   filter(question == 'raam') |>
   ggplot(aes(x = value)) +
-  geom_histogram(
+  geom_point(
     stat = 'count',
-    binwidth = 1,
-    position = 'dodge',
+    shape = 21,
+    size = 4,
     fill = 'plum3', 
     color = 'black'
   ) +
@@ -263,82 +293,6 @@ tab3 + tab4 +
 ```
 Few respondants believe in a commitment to Israeli democracy even when they or their party loses a vote. Additionally, a large majority opposes the introduction of the first Arab-Israeli (Palestinian) party into the governing coalition.
 
-```{r, improvement, out.width='90%'}
-names = list(
-  "v9" = "Economic Situation",
-  "v11" = "Security Situation"
-)
-
-minor = c("Improved A Lot", "Improved a Little", "No Change", "Deteriorated a Little", "Deteriorated a Lot")
-
-tab = df |>
-  select(v9, v11) |>
-  drop_na() |>
-  pivot_longer(
-    cols = c(v9, v11),
-    names_to = 'question',
-  ) |>
-  mutate(
-    response = FctWhen(
-      value == "1" ~ 'Improved A Lot', 
-      value == "2" ~ 'Improved a Little',
-      value == "3" ~ 'No Change',
-      value == "4" ~ 'Deteriorated a Little',
-      value == "5" ~ 'Deteriorated a Lot'
-    )
-  ) |>
-  mutate(
-    avg = case_when(
-      question == "v9" & value == 1 ~ sum(question == "v9" & value == 1)/1585,
-      question == "v9" & value == 2 ~ sum(question == "v9" & value == 2)/1585,
-      question == "v9" & value == 3 ~ sum(question == "v9" & value == 3)/1585,
-      question == "v9" & value == 4 ~ sum(question == "v9" & value == 4)/1585,
-      question == "v9" & value == 5 ~ sum(question == "v9" & value == 5)/1585,
-      question == "v11" & value == 1 ~ sum(question == "v11" & value == 1)/1585,
-      question == "v11" & value == 2 ~ sum(question == "v11" & value == 2)/1585,
-      question == "v11" & value == 3 ~ sum(question == "v11" & value == 3)/1585,
-      question == "v11" & value == 4 ~ sum(question == "v11" & value == 4)/1585,
-      question == "v11" & value == 5 ~ sum(question == "v11" & value == 5)/1585
-    )
-  )
-
-tab1 = tab |>
-  ggplot(aes(x = response, y = avg)) +
-  geom_point(shape = 21, size = 3, fill = 'plum3', color = 'black') +
-  facet_wrap(~ question, nrow = 2, labeller = variable_labeller) +
-  labs(
-    title = "In your opinion, has the ____ of Israel improved in the last four years?",
-    x = "Response", 
-    y = "Percent"
-  ) +
-  scale_y_continuous(
-    breaks = seq(0, 1, by = .05),
-    labels = scales::percent_format(accuracy = 1)
-  ) +
-  theme(
-    legend.position = "right",
-    legend.title = element_text(face = 'bold', hjust = 0.5),
-    legend.text = element_text(family = 'Times'),
-    strip.background = element_rect(fill = "slateblue4", color = "black"),
-    strip.text = element_text(family = 'Times', face = 'bold', color = "white"),
-    axis.title.y = element_text(face = 'bold', family = 'Times'),
-    axis.title.x = element_text(face = 'bold', family = 'Times'),
-    axis.ticks.y = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.text.y = element_text(family = 'Times'),
-    axis.text.x = element_text(family = 'Times'),
-    title = element_text(family = 'Times'),
-    panel.grid.major.x = element_line(color = 'grey'),
-    panel.grid.major.y = element_line(color = 'lightgrey'),
-    panel.background = element_blank(),
-    plot.title = element_text(hjust = .5),
-    plot.subtitle = element_text(face = 'italic', hjust = .5)
-  )
-tab1 + expand_limits(y = 0)
-```
-
-Less than 15% of Israeli voters believe that the nation's security or economic situation has improved in the past four years. 
-
 Below is a table depicting two regressions:
 
 1. Responses to two questions (one regarding perceptions of democratic governance, the other regarding perceptions of Israel's political functioning) regressed onto the reported religiosity of Israelis.
@@ -365,12 +319,10 @@ modelsummary(mods, fmt = fmt_significant(2),
              )
 ) 
 ```
-From regression 1, we can conclude that increased religiosity is slightly, but signficantly, associated with positive regard towards Israeli governance and political functioning. The coefficient implies that a one-unit increase in religiosity corresponds to an expected to increase in governance and political functioning scores. 
-
-From regression 2, we can conclude that perceptions of Israel's economy and national security are significant predictors of religiosity. A one-unit increase in religiosity corresponds to an expected to decrease in perceptions of the economy and security. 
+From regression 1, we can conclude that increased religiosity is slightly, but signficantly, associated with positive regard towards Israeli governance and political functioning. The coefficient implies that a one-unit increase in religiosity corresponds to an expected to increase in governance and political functioning scores.  From regression 2, we can conclude that perceptions of Israel's economy and national security are significant predictors of religiosity. A one-unit increase in religiosity corresponds to an expected to decrease in perceptions of the economy and security. 
 
 # Discussion
-We can reject the null hypothesis that the seeds of Israel's current democratic crisis were sown either with the start of the Judicial overhaul or the war with Hamas beginning on October 7. Responses indicate that a large majority of Israeli voters oppose cornerstones of democracy such as accepting the outcome of an election and minority inclusion. Thus, there is evidence that the roots of Israel's current democratic crisis are at least two years old. All the above findings indicate that Israel was vulnerable to demogogues and extremists going into the November 2022 election. Perhaps it is unsurprising that the November 2022 election saw the ascendance of the most [extremist, anti-Arab, and right-wing governing coalition in Israeli history](https://www.vox.com/world/2023/1/20/23561464/israel-new-right-wing-government-extreme-protests-netanyahu-biden-ben-gvir).
+We can reject the null hypothesis and conclude that the seeds of Israel's current democratic crisis were sown as early as the November 2022 election. Responses indicate that a large majority of Israeli voters oppose cornerstones of democracy such as accepting the outcome of an election and minority inclusion. All the above findings indicate that Israel was vulnerable to demagogues and extremists going into the November 2022 election. Perhaps it is unsurprising that the November 2022 election saw the ascendance of the most [extremist, anti-Arab, and right-wing governing coalition in Israeli history](https://www.vox.com/world/2023/1/20/23561464/israel-new-right-wing-government-extreme-protests-netanyahu-biden-ben-gvir).
 
 # References
 Thank you to the Tel Aviv University's B. I. and Lucille Cohen Institute for Public Opinion Research for offering freely available Israeli election data. 
